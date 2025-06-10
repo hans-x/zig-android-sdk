@@ -36,6 +36,7 @@ android_manifest: ?LazyPath,
 artifacts: std.ArrayListUnmanaged(*Step.Compile),
 java_files: std.ArrayListUnmanaged(LazyPath),
 resources: std.ArrayListUnmanaged(Resource),
+assets: std.ArrayListUnmanaged(Resource),
 
 pub fn create(b: *std.Build, tools: *const Tools) *Apk {
     const apk: *Apk = b.allocator.create(Apk) catch @panic("OOM");
@@ -47,6 +48,7 @@ pub fn create(b: *std.Build, tools: *const Tools) *Apk {
         .artifacts = .empty,
         .java_files = .empty,
         .resources = .empty,
+        .assets = .empty,
     };
     return apk;
 }
@@ -65,6 +67,15 @@ pub fn setAndroidManifest(apk: *Apk, path: LazyPath) void {
 pub fn addResourceDirectory(apk: *Apk, dir: LazyPath) void {
     const b = apk.b;
     apk.resources.append(b.allocator, Resource{
+        .directory = .{
+            .source = dir,
+        },
+    }) catch @panic("OOM");
+}
+
+pub fn addAssetDirectory(apk: *Apk, dir: LazyPath) void {
+    const b = apk.b;
+    apk.assets.append(b.allocator, Resource{
         .directory = .{
             .source = dir,
         },
@@ -300,6 +311,10 @@ fn doInstallApk(apk: *Apk) std.mem.Allocator.Error!*Step.InstallFile {
         //     make_unsigned_apk.addArg("-A"); // additional directory in which to find raw asset files
         //     make_unsigned_apk.addArg(sdk.b.pathFromRoot(dir));
         // }
+        for (apk.assets.items) |dir| {
+            aapt2link.addArg("-A"); // additional directory in which to find raw asset files
+            aapt2link.addDirectoryArg(dir.directory.source);
+        }
 
         // Add resource files
         for (apk.resources.items) |resource| {
