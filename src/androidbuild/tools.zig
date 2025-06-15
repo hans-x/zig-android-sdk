@@ -804,4 +804,4 @@ const PathSearch = struct {
     }
 };
 
-const Tools = @This();
+pub const Tools = @This();

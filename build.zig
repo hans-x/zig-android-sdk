@@ -7,6 +7,7 @@ const Apk = @import("src/androidbuild/apk.zig");
 pub const Tools = @import("src/androidbuild/tools.zig");
 pub const APK = Apk; // TODO(jae): 2025-03-13: Consider deprecating and using 'Apk' to be conventional to Zig
 pub const APILevel = androidbuild.APILevel; // TODO(jae): 2025-03-13: Consider deprecating and using 'ApiLevel' to be conventional to Zig
+pub const NDK = @import("src/androidbuild/ndk.zig");
 pub const standardTargets = androidbuild.standardTargets;
 
 // Deprecated exposes fields
