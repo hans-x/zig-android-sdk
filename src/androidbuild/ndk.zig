@@ -1,21 +1,19 @@
 const std = @import("std");
 const Compile = std.Build.Step.Compile;
 const LazyPath = std.Build.LazyPath;
-const Tools = @import("tools.zig").Tools;
-const androidbuild = @import("androidbuild.zig");
-const APILevel = androidbuild.APILevel;
+const Apk = @import("apk.zig");
 
-pub fn applyNDK(b: *std.Build, artifact: *Compile, tools: *const Tools) void {
+pub fn applyNDK(b: *std.Build, artifact: *Compile, apk: *const Apk) void {
     artifact.linkLibC();
 
     const system_target = getAndroidTriple(artifact.rootModuleTarget()) catch |err| @panic(@errorName(err));
 
-    const android_api_version: u32 = @intFromEnum(tools.api_level);
+    const android_api_version: u32 = @intFromEnum(apk.api_level);
 
-    const libc = createLibC(b, system_target, android_api_version, tools.ndk_sysroot_path, tools.ndk_version);
+    const libc = createLibC(b, system_target, android_api_version, apk.ndk.sysroot_path, apk.ndk.version);
 
-    const library_path1: LazyPath = .{ .cwd_relative = b.fmt("{s}/usr/lib/{s}/{d}", .{ tools.ndk_sysroot_path, system_target, android_api_version }) };
-    const library_path2: LazyPath = .{ .cwd_relative = b.fmt("{s}/usr/lib/{s}", .{ tools.ndk_sysroot_path, system_target }) };
+    const library_path1: LazyPath = .{ .cwd_relative = b.fmt("{s}/usr/lib/{s}/{d}", .{ apk.ndk.sysroot_path, system_target, android_api_version }) };
+    const library_path2: LazyPath = .{ .cwd_relative = b.fmt("{s}/usr/lib/{s}", .{ apk.ndk.sysroot_path, system_target }) };
     setArtifactNDK(artifact, libc, library_path1, library_path2);
 }
 
