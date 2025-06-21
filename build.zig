@@ -7,7 +7,6 @@ const androidbuild = @import("src/androidbuild/androidbuild.zig");
 pub const Sdk = @import("src/androidbuild/tools.zig");
 pub const Apk = @import("src/androidbuild/apk.zig");
 pub const ApiLevel = androidbuild.ApiLevel;
-pub const NDK = @import("src/androidbuild/ndk.zig");
 pub const standardTargets = androidbuild.standardTargets;
 
 // Deprecated exposed fields

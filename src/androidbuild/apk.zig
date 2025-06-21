@@ -166,7 +166,7 @@ pub fn setKeyStore(apk: *Apk, key_store: KeyStore) void {
     apk.key_store = key_store;
 }
 
-fn addLibraryPaths(apk: *Apk, module: *std.Build.Module) void {
+pub fn addLibraryPaths(apk: *Apk, module: *std.Build.Module) void {
     const b = apk.b;
     const android_ndk_sysroot = apk.ndk.sysroot_path;
 
@@ -737,7 +737,7 @@ fn getSystemIncludePath(apk: *Apk, target: ResolvedTarget) []const u8 {
     return b.fmt("{s}/{s}", .{ apk.ndk.include_path, system_target });
 }
 
-fn setLibCFile(apk: *Apk, compile: *Step.Compile) void {
+pub fn setLibCFile(apk: *Apk, compile: *Step.Compile) void {
     const tools = apk.sdk;
     const android_libc_path = tools.createOrGetLibCFile(compile, apk.api_level, apk.ndk.sysroot_path, apk.ndk.version);
     android_libc_path.addStepDependencies(&compile.step);
