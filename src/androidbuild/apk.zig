@@ -172,7 +172,7 @@ pub fn setKeyStore(apk: *Apk, key_store: KeyStore) void {
     apk.key_store = key_store;
 }
 
-fn addLibraryPaths(apk: *Apk, module: *std.Build.Module) void {
+pub fn addLibraryPaths(apk: *Apk, module: *std.Build.Module) void {
     const b = apk.b;
     const android_ndk_sysroot = apk.ndk.sysroot_path;
 
@@ -358,14 +358,9 @@ fn doInstallApk(apk: *Apk) std.mem.Allocator.Error!*Step.InstallFile {
         const resources_apk_file = aapt2link.addOutputFileArg("resources.apk");
 
         // Add assets
-        for (apk.assets.items) |asset| {
-            switch (asset) {
-                .directory => |asset_dir_path| {
-                    aapt2link.addArg("-A");
-                    aapt2link.addDirectoryArg(asset_dir_path.source);
-                    DirectoryFileInput.create(b, aapt2link, asset_dir_path.source);
-                },
-            }
+        for (apk.assets.items) |dir| {
+            aapt2link.addArg("-A"); // additional directory in which to find raw asset files
+            aapt2link.addDirectoryArg(dir.directory.source);
         }
 
         // Add resource files
@@ -776,7 +771,7 @@ fn getSystemIncludePath(apk: *Apk, target: ResolvedTarget) []const u8 {
     return b.fmt("{s}/{s}", .{ apk.ndk.include_path, system_target });
 }
 
-fn setLibCFile(apk: *Apk, compile: *Step.Compile) void {
+pub fn setLibCFile(apk: *Apk, compile: *Step.Compile) void {
     const tools = apk.sdk;
     const android_libc_path = tools.createOrGetLibCFile(compile, apk.api_level, apk.ndk.sysroot_path, apk.ndk.version);
     android_libc_path.addStepDependencies(&compile.step);
