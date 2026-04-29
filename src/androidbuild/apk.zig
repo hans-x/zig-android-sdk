@@ -356,14 +356,7 @@ fn doInstallApk(apk: *Apk) std.mem.Allocator.Error!*Step.InstallFile {
         aapt2link.addArg("-o");
         const resources_apk_file = aapt2link.addOutputFileArg("resources.apk");
 
-        // TODO(jae): 2024-09-17
-        // Add support for asset directories
-        // Additional directory
-        // aapt.step.dependOn(&resource_write_files.step);
-        // for (app_config.asset_directories) |dir| {
-        //     make_unsigned_apk.addArg("-A"); // additional directory in which to find raw asset files
-        //     make_unsigned_apk.addArg(sdk.b.pathFromRoot(dir));
-        // }
+        // Add assets
         for (apk.assets.items) |dir| {
             aapt2link.addArg("-A"); // additional directory in which to find raw asset files
             aapt2link.addDirectoryArg(dir.directory.source);
