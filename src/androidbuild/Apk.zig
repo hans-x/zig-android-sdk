@@ -193,6 +193,40 @@ pub fn addLibraryFile(apk: *Apk, android_target: androidbuild.AndroidTarget, pat
     }) catch @panic("OOM");
 }
 
+pub fn addLibraryPaths(apk: *Apk, module: *std.Build.Module) void {
+    const b = apk.b;
+    const android_ndk_sysroot = apk.ndk.sysroot_path;
+
+    // get target
+    const target: ResolvedTarget = module.resolved_target orelse {
+        @panic(b.fmt("no 'target' set on Android module", .{}));
+    };
+    const system_target = getAndroidTriple(target) catch |err| @panic(@errorName(err));
+
+    // NOTE(jae): 2024-09-11
+    // These *must* be in order of API version, then architecture, then non-arch specific otherwise
+    // when starting an *.so from Android or an emulator you can get an error message like this:
+    // - "java.lang.UnsatisfiedLinkError: dlopen failed: TLS symbol "_ZZN8gwp_asan15getThreadLocalsEvE6Locals" in dlopened"
+    const android_api_version: u32 = @intFromEnum(apk.api_level);
+
+    // NOTE(jae): 2025-03-09
+    // Resolve issue where building SDL2 gets the following error for 'arm-linux-androideabi'
+    // SDL2-2.32.2/src/cpuinfo/SDL_cpuinfo.c:93:10: error: 'cpu-features.h' file not found
+    //
+    // This include is specifically needed for: #if defined(__ANDROID__) && defined(__arm__) && !defined(HAVE_GETAUXVAL)
+    //
+    // ie. $ANDROID_HOME/ndk/{ndk_version}/sources/android/cpufeatures
+    if (target.result.cpu.arch == .arm) {
+        module.addIncludePath(.{
+            .cwd_relative = b.fmt("{s}/ndk/{s}/sources/android/cpufeatures", .{ apk.sdk.android_sdk_path, apk.ndk.version }),
+        });
+    }
+
+    // ie. $ANDROID_HOME/ndk/{ndk_version}/toolchains/llvm/prebuilt/{host_os_and_arch}/sysroot ++ usr/lib/aarch64-linux-android/35
+    module.addLibraryPath(.{ .cwd_relative = b.fmt("{s}/usr/lib/{s}/{d}", .{ android_ndk_sysroot, system_target, android_api_version }) });
+    // ie. $ANDROID_HOME/ndk/{ndk_version}/toolchains/llvm/prebuilt/{host_os_and_arch}/sysroot ++ /usr/lib/aarch64-linux-android
+    module.addLibraryPath(.{ .cwd_relative = b.fmt("{s}/usr/lib/{s}", .{ android_ndk_sysroot, system_target }) });
+}
 pub fn installApk(apk: *Apk) void {
     const b = apk.b;
     const install_apk = apk.addInstallApk();
@@ -348,14 +382,9 @@ fn doInstallApk(apk: *Apk) Allocator.Error!*Step.InstallFile {
         const resources_apk_file = aapt2link.addOutputFileArg("resources.apk");
 
         // Add assets
-        for (apk.assets.items) |asset| {
-            switch (asset) {
-                .directory => |asset_dir_path| {
-                    aapt2link.addArg("-A");
-                    aapt2link.addDirectoryArg(asset_dir_path.source);
-                    DirectoryFileInput.create(b, aapt2link, asset_dir_path.source);
-                },
-            }
+        for (apk.assets.items) |dir| {
+            aapt2link.addArg("-A"); // additional directory in which to find raw asset files
+            aapt2link.addDirectoryArg(dir.directory.source);
         }
 
         // Add resource files
@@ -823,7 +852,7 @@ fn getSystemIncludePath(apk: *Apk, target: ResolvedTarget) []const u8 {
     return b.fmt("{s}/{s}", .{ apk.ndk.include_path, system_target });
 }
 
-fn setLibCFile(apk: *Apk, compile: *Step.Compile) void {
+pub fn setLibCFile(apk: *Apk, compile: *Step.Compile) void {
     const tools = apk.sdk;
     const android_libc_path = tools.createOrGetLibCFile(compile, apk.api_level, apk.ndk.sysroot_path, apk.ndk.version);
     android_libc_path.addStepDependencies(&compile.step);
